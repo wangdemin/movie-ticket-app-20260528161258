@@ -373,3 +373,51 @@ body {
         font-size: 0.65rem;
     }
 }
+
+/* 类型筛选 */
+.filter-panel {
+    background: #fff;
+    border-radius: 14px;
+    padding: 18px 20px;
+    margin-bottom: 24px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    flex-wrap: wrap;
+}
+
+.filter-title {
+    font-weight: 700;
+    color: #343a40;
+    white-space: nowrap;
+}
+
+.genre-filter {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.genre-chip {
+    border: 1px solid #d7dde8;
+    background: #f8f9fb;
+    color: #495057;
+    border-radius: 999px;
+    padding: 7px 16px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.genre-chip:hover {
+    border-color: #0d6efd;
+    color: #0d6efd;
+    background: #eef5ff;
+}
+
+.genre-chip.active {
+    border-color: #0d6efd;
+    background: #0d6efd;
+    color: #fff;
+    box-shadow: 0 6px 14px rgba(13,110,253,0.25);
+}

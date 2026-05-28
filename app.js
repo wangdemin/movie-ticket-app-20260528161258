@@ -16,6 +16,7 @@ const cinemas = [
 ];
 
 let currentBooking = { movie: null, cinema: null, showtime: null, seats: [], seatMap: [] };
+let currentFilters = { page: 'now-playing', genre: '全部', keyword: '' };
 
 function getOrders() {
   return JSON.parse(localStorage.getItem('movie_orders') || '[]');
@@ -54,6 +55,13 @@ function generateSeats(showtimeId) {
 }
 
 function showPage(pageName) {
+  if (pageName === 'now-playing' || pageName === 'coming-soon') {
+    currentFilters.page = pageName;
+    currentFilters.genre = '全部';
+    currentFilters.keyword = '';
+    const searchInput = document.getElementById('searchInput');
+    if (searchInput) searchInput.value = '';
+  }
   document.querySelectorAll('.page-content').forEach(page => page.classList.add('d-none'));
   document.getElementById(`page-${pageName}`).classList.remove('d-none');
   document.querySelectorAll('.nav-link').forEach(link => link.classList.remove('active'));
@@ -91,24 +99,66 @@ function renderHome() {
   document.getElementById('home-coming-grid').innerHTML = movies.filter(movie => !movie.nowPlaying).map(movie => createMovieCard(movie, false)).join('');
 }
 
-function renderNowPlaying(list = movies.filter(movie => movie.nowPlaying)) {
-  document.getElementById('now-playing-grid').innerHTML = list.length ? list.map(movie => createMovieCard(movie, movie.nowPlaying)).join('') : '<div class="col-12"><div class="alert alert-warning">没有找到相关电影。</div></div>';
+function splitGenres(movie) {
+  return movie.genre.split('/').map(item => item.trim());
+}
+
+function getGenres(isNowPlaying) {
+  const genreSet = new Set();
+  movies.filter(movie => movie.nowPlaying === isNowPlaying).forEach(movie => {
+    splitGenres(movie).forEach(genre => genreSet.add(genre));
+  });
+  return ['全部', ...Array.from(genreSet)];
+}
+
+function renderGenreFilter(containerId, isNowPlaying) {
+  const container = document.getElementById(containerId);
+  if (!container) return;
+  container.innerHTML = getGenres(isNowPlaying).map(genre => `
+    <button type="button" class="genre-chip ${currentFilters.genre === genre ? 'active' : ''}" onclick="selectGenre('${genre}')">${genre}</button>
+  `).join('');
+}
+
+function filterMovies(isNowPlaying) {
+  return movies.filter(movie => {
+    const matchStatus = movie.nowPlaying === isNowPlaying;
+    const matchGenre = currentFilters.genre === '全部' || splitGenres(movie).includes(currentFilters.genre);
+    const matchKeyword = !currentFilters.keyword || movie.title.toLowerCase().includes(currentFilters.keyword);
+    return matchStatus && matchGenre && matchKeyword;
+  });
+}
+
+function renderMovieResults(containerId, list, canBook) {
+  document.getElementById(containerId).innerHTML = list.length
+    ? list.map(movie => createMovieCard(movie, canBook && movie.nowPlaying)).join('')
+    : '<div class="col-12"><div class="alert alert-warning">没有找到符合条件的电影。</div></div>';
+}
+
+function renderNowPlaying() {
+  renderGenreFilter('now-playing-genre-filter', true);
+  renderMovieResults('now-playing-grid', filterMovies(true), true);
 }
 
 function renderComingSoon() {
-  document.getElementById('coming-soon-grid').innerHTML = movies.filter(movie => !movie.nowPlaying).map(movie => createMovieCard(movie, false)).join('');
+  renderGenreFilter('coming-soon-genre-filter', false);
+  renderMovieResults('coming-soon-grid', filterMovies(false), false);
+}
+
+function selectGenre(genre) {
+  currentFilters.genre = genre;
+  if (currentFilters.page === 'coming-soon') renderComingSoon();
+  else renderNowPlaying();
 }
 
 function searchMovies(event) {
   event.preventDefault();
   const keyword = document.getElementById('searchInput').value.trim().toLowerCase();
-  if (!keyword) {
-    showPage('now-playing');
-    return;
-  }
-  const results = movies.filter(movie => movie.title.toLowerCase().includes(keyword));
+  currentFilters.keyword = keyword;
+  currentFilters.genre = '全部';
+  currentFilters.page = 'now-playing';
   showPage('now-playing');
-  renderNowPlaying(results);
+  currentFilters.keyword = keyword;
+  renderNowPlaying();
 }
 
 function startBooking(movieId) {
